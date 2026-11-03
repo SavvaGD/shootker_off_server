@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHOOTKER Admin Panel</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: white; text-align: center; padding: 50px; }
+        h1 { color: #ffcc00; text-shadow: 0 0 10px #ffcc00; }
+        .panel { display: flex; flex-direction: column; gap: 20px; max-width: 400px; margin: 0 auto; }
+        button { padding: 15px; font-size: 18px; background: #333; color: white; border: 2px solid #555; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #ffcc00; color: black; border-color: #ffcc00; }
+        .status { margin-top: 30px; color: #888; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>SHOOTKER Server Panel</h1>
+    <div class="panel">
+        <button onclick="sendAction('map', 0)">Загрузить Forest</button>
+        <button onclick="sendAction('map', 1)">Загрузить Abandonment</button>
+        <button onclick="sendAction('map', 2)">Загрузить Village</button>
+        <hr style="width:100%; border-color:#333;">
+        <button onclick="sendAction('restart')" style="background:#8b0000; border-color:#ff0000;">Перезапустить матч (Respawn)</button>
+    </div>
+    <div class="status" id="status">Готов к работе</div>
+
+    <script>
+        async function sendAction(action, mapId = null) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = 'Отправка...';
+            
+            const payload = { action: action };
+            if (mapId !== null) payload.mapId = mapId;
+
+            try {
+                const response = await fetch('/api/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    statusDiv.innerText = 'Успешно! Команда выполнена.';
+                    statusDiv.style.color = '#00ff00';
+                } else {
+                    statusDiv.innerText = 'Ошибка на сервере!';
+                    statusDiv.style.color = '#ff0000';
+                }
+            } catch (e) {
+                statusDiv.innerText = 'Ошибка соединения!';
+                statusDiv.style.color = '#ff0000';
+            }
+        }
+    </script>
+</body>
+</html>
