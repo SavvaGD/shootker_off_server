@@ -40,7 +40,7 @@
             if (mapId !== null) payload.mapId = mapId;
 
             try {
-                // ВОТ ТУТ ИЗМЕНЕНИЕ: стучимся на /api/server вместо /api/admin
+                // ВАЖНО: Стучимся на /api/server
                 const response = await fetch('/api/server', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
