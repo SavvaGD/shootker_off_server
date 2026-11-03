@@ -1,18 +1,18 @@
 export default async function handler(req: any, res: any) {
-  // Разрешаем CORS
+  // CORS заголовки, чтобы браузер (index.html) и игра могли делать запросы
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Инициализируем "глобальную" память (она живет, пока функция не заснет)
+  // Инициализация глобальной памяти
   if (!global.players) global.players = {};
   if (!global.messages) global.messages = {};
   if (!global.currentMap) global.currentMap = 0;
   if (!global.nextId) global.nextId = 1;
 
-  // Получаем путь запроса (например, '/api/admin' или '/api/send')
+  // Vercel передает путь в req.url (например, '/api/connect' или '/api/server')
   const url = req.url.split('?')[0];
 
   // --- 1. КОННЕКТ (Выдача ID) ---
@@ -60,7 +60,8 @@ export default async function handler(req: any, res: any) {
   }
 
   // --- 4. АДМИНКА (Кнопки на сайте) ---
-  if (url === '/api/admin' && req.method === 'POST') {
+  // ВАЖНО: index.html будет стучаться именно сюда, на /api/server
+  if (url === '/api/server' && req.method === 'POST') {
     const buffers = [];
     for await (const chunk of req) { buffers.push(chunk); }
     let data;
