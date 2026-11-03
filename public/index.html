@@ -67,7 +67,7 @@
             if (mapId !== null) payload.mapId = mapId;
 
             try {
-                // Отправляем запрос на нашу Node.js функцию в Vercel
+                // Отправляем POST-запрос на /api/admin
                 const response = await fetch('/api/admin', {
                     method: 'POST',
                     headers: { 
