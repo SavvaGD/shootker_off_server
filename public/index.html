@@ -7,43 +7,16 @@
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #1e1e1e; 
-            color: white; 
-            text-align: center; 
-            padding: 50px; 
-            margin: 0;
+            background: #1e1e1e; color: white; text-align: center; padding: 50px; margin: 0;
         }
-        h1 { 
-            color: #ffcc00; 
-            text-shadow: 0 0 10px #ffcc00; 
-        }
-        .panel { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
+        h1 { color: #ffcc00; text-shadow: 0 0 10px #ffcc00; }
+        .panel { display: flex; flex-direction: column; gap: 20px; max-width: 400px; margin: 0 auto; }
         button { 
-            padding: 15px; 
-            font-size: 18px; 
-            background: #333; 
-            color: white; 
-            border: 2px solid #555; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            transition: 0.2s; 
+            padding: 15px; font-size: 18px; background: #333; color: white; 
+            border: 2px solid #555; border-radius: 8px; cursor: pointer; transition: 0.2s; 
         }
-        button:hover { 
-            background: #ffcc00; 
-            color: black; 
-            border-color: #ffcc00; 
-        }
-        .status { 
-            margin-top: 30px; 
-            color: #888; 
-            font-size: 14px; 
-        }
+        button:hover { background: #ffcc00; color: black; border-color: #ffcc00; }
+        .status { margin-top: 30px; color: #888; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -67,12 +40,10 @@
             if (mapId !== null) payload.mapId = mapId;
 
             try {
-                // Отправляем POST-запрос на /api/admin
-                const response = await fetch('/api/admin', {
+                // ВОТ ТУТ ИЗМЕНЕНИЕ: стучимся на /api/server вместо /api/admin
+                const response = await fetch('/api/server', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json' 
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
