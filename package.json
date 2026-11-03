@@ -2,8 +2,8 @@
   "name": "shootker-server",
   "version": "1.0.0",
   "private": true,
+  "main": "api/ws.ts",
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod"
+    "start": "vercel dev"
   }
 }
