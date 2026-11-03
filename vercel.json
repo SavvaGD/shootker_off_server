@@ -1,7 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/api/ws", "destination": "/api/ws" },
-    { "source": "/api/admin", "destination": "/api/admin" },
-    { "source": "/", "destination": "/index.html" }
-  ]
+  "functions": {
+    "api/server.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }
