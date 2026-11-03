@@ -1,98 +1,64 @@
-export const config = {
-  runtime: 'edge',
-};
+export const config = { runtime: 'edge' };
 
-// Глобальное состояние (сбрасывается, если сервер засыпает)
-let currentMap = 0; // 0 = Forest, 1 = Abandonment, 2 = Village
-let restartFlag = false;
-let clients = new Map<number, ReadableStreamDefaultController>();
-let nextId = 1;
+// Глобальное состояние (в памяти Vercel)
+let players: Record<number, any> = {};
+let messages: Record<number, any[]> = {};
+let lastActivity = Date.now();
+let currentMap = 0;
 
 export default async function handler(req: Request) {
   const url = new URL(req.url);
+  const myId = parseInt(url.searchParams.get('id') || '0');
 
-  // 1. ОБРАБОТКА ЗАПРОСОВ ОТ АДМИНКИ (POST)
-  if (req.method === 'POST' && url.pathname === '/api/admin') {
-    try {
-      const data = await req.json();
-      
-      if (data.action === 'map' && data.mapId !== undefined) {
-        currentMap = data.mapId;
-        broadcast({ type: 'map', mapId: currentMap });
-        return new Response(JSON.stringify({ ok: true, map: currentMap }), { status: 200 });
-      }
-      
-      if (data.action === 'restart') {
-        restartFlag = true;
-        broadcast({ type: 'respawn' });
-        return new Response(JSON.stringify({ ok: true, msg: 'Game Restarted' }), { status: 200 });
-      }
-      
-      return new Response('Invalid action', { status: 400 });
-    } catch (e) {
-      return new Response('Bad Request', { status: 400 });
-    }
-  }
-
-  // 2. ОБРАБОТКА ПОДКЛЮЧЕНИЯ ИГРОКОВ (GET /api/ws)
-  if (req.method === 'GET' && url.pathname === '/api/ws') {
-    const myId = nextId++;
-    let controller: ReadableStreamDefaultController;
-
-    const stream = new ReadableStream({
-      start(c) {
-        controller = c;
-        clients.set(myId, controller);
-
-        const encoder = new TextEncoder();
-        // Отправляем игроку его ID и текущую карту
-        controller.enqueue(encoder.encode(`data: {"type":"id","id":${myId}}\n\n`));
-        controller.enqueue(encoder.encode(`data: {"type":"map","mapId":${currentMap}}\n\n`));
-      },
-      cancel() {
-        clients.delete(myId);
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
+  // 1. Подключение игрока (получение ID и карты)
+  if (url.pathname === '/api/connect') {
+    const newId = Math.floor(Math.random() * 10000) + 1; // Случайный ID
+    players[newId] = { id: newId, hp: 10, x: 0, y: 0, z: 0 };
+    messages[newId] = [];
+    
+    return new Response(JSON.stringify({ id: newId, map: currentMap }), {
+      headers: { 'Access-Control-Allow-Origin': '*' }
     });
   }
 
-  // 3. ОБРАБОТКА ДАННЫХ ОТ ИГРОКОВ (POST /api/ws)
-  if (req.method === 'POST' && url.pathname === '/api/ws') {
-    try {
-      const data = await req.json();
-      const senderId = data.id;
-
-      // Пересылаем всем, кроме отправителя
-      const encoder = new TextEncoder();
-      const message = encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
-
-      clients.forEach((controller, id) => {
-        if (id !== senderId) {
-          try { controller.enqueue(message); } catch (e) { clients.delete(id); }
-        }
-      });
-
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
-    } catch (e) {
-      return new Response('Bad Request', { status: 400 });
+  // 2. Отправка данных от игрока (состояние, выстрел)
+  if (url.pathname === '/api/send' && req.method === 'POST') {
+    const data = await req.json();
+    const senderId = data.id;
+    
+    // Обновляем состояние игрока
+    if (data.type === 'state') players[senderId] = { ...players[senderId], ...data };
+    
+    // Кладем сообщение в очередь всем остальным
+    for (let id in players) {
+      if (parseInt(id) !== senderId) {
+        messages[id].push(data);
+      }
     }
+    return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  // 3. Получение данных (Long Polling)
+  if (url.pathname === '/api/receive') {
+    const start = Date.now();
+    
+    // Ждем до 10 секунд появления новых сообщений
+    while (Date.now() - start < 10000) {
+      if (messages[myId] && messages[myId].length > 0) {
+        const msgs = messages[myId];
+        messages[myId] = []; // Очищаем
+        return new Response(JSON.stringify(msgs), {
+          headers: { 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+      await new Promise(r => setTimeout(r, 100)); // Спим 100мс
+    }
+    
+    // Если ничего не пришло — возвращаем пустой массив (игрок сразу спросит снова)
+    return new Response(JSON.stringify([]), {
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
   }
 
   return new Response('Not Found', { status: 404 });
-}
-
-// Вспомогательная функция для рассылки
-function broadcast(data: any) {
-  const encoder = new TextEncoder();
-  const message = encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
-  clients.forEach((controller, id) => {
-    try { controller.enqueue(message); } catch (e) { clients.delete(id); }
-  });
 }
